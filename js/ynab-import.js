@@ -331,7 +331,6 @@ function detectRecurringYNAB(transactions) {
     let cycle = null;
     if (avgDays >= 5 && avgDays <= 9) cycle = "Weekly";
     else if (avgDays >= 20 && avgDays <= 35) cycle = "Monthly";
-    else if (avgDays >= 80 && avgDays <= 100) cycle = "Quarterly";
     else if (avgDays >= 320 && avgDays <= 400) cycle = "Yearly";
 
     if (!cycle) continue;
@@ -354,11 +353,6 @@ function detectRecurringYNAB(transactions) {
     }
     
     if (!isConsistent) continue;
-
-    // Convert quarterly to monthly for UI simplicity
-    if (cycle === "Quarterly") {
-      cycle = "Monthly";
-    }
 
     recurring.push({
       name: group[0].payee,
@@ -466,7 +460,7 @@ function addYNABSubscriptions() {
       currency: selectedCurrency,
       cycle: sub.cycle,
       url: "",
-      color: generateRandomColor()
+      color: randColor().id
     });
   }
 
@@ -477,13 +471,7 @@ function addYNABSubscriptions() {
   alert("Added " + toAdd.length + " subscription" + plural + " from YNAB!");
 }
 
-/**
- * Generate random color from palette
- */
-function generateRandomColor() {
-  const colorIds = ["purple", "blue", "cyan", "green", "yellow", "orange", "pink", "rose", "slate", "indigo", "teal", "amber"];
-  return colorIds[Math.floor(Math.random() * colorIds.length)];
-}
+
 
 // Add backdrop click handler when DOM is loaded
 document.addEventListener("DOMContentLoaded", function() {
