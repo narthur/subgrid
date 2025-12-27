@@ -125,6 +125,15 @@
             </div>
             <span class="text-xs text-slate-400">CSV file from your bank</span>
           </button>
+          <button
+            onclick="openYNABImport()"
+            class="flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-200 bg-white py-4 transition-all hover:border-indigo-300 hover:bg-indigo-50">
+            <div class="flex items-center gap-2 text-sm font-semibold text-slate-500">
+              <span class="iconify h-5 w-5" data-icon="ph:currency-dollar-bold"></span>
+              Import from YNAB
+            </div>
+            <span class="text-xs text-slate-400">Sync your budgeted subscriptions</span>
+          </button>
           <label
             class="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-200 bg-white py-4 transition-all hover:border-indigo-300 hover:bg-slate-50 active:scale-[0.99]"
           >
@@ -782,6 +791,114 @@
         </div>
       </div>
     </div>
+
+    <div
+      id="ynab-import-backdrop"
+      class="fixed inset-0 z-50 hidden bg-slate-900/30 opacity-0 backdrop-blur-sm transition-opacity duration-300"
+      aria-hidden="true"
+    ></div>
+    <div
+      id="ynab-import-panel"
+      class="pointer-events-none fixed inset-0 z-50 flex hidden items-end justify-center sm:items-center sm:p-4"
+    >
+      <div
+        class="pointer-events-auto flex max-h-[90vh] w-full translate-y-full transform flex-col overflow-hidden rounded-t-3xl bg-white opacity-0 shadow-2xl transition-all duration-300 sm:max-w-lg sm:translate-y-10 sm:scale-95 sm:rounded-3xl"
+      >
+        <div
+          class="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/80 p-5 backdrop-blur"
+        >
+          <h3 class="text-lg font-bold text-slate-900" id="ynab-import-title">Import from YNAB</h3>
+          <button
+            onclick="closeYNABImport()"
+            class="rounded-full bg-slate-100 p-2 text-slate-400 transition-colors hover:text-slate-600"
+          >
+            <span class="iconify h-5 w-5" data-icon="ph:x-bold"></span>
+          </button>
+        </div>
+
+        <div class="overflow-y-auto bg-white p-5" style="max-height: 70vh;">
+          <!-- Step 1: Enter Token -->
+          <div id="ynab-step-1">
+            <div class="mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
+              <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
+                <span class="iconify h-5 w-5" data-icon="ph:info-bold"></span>
+                How to get your token
+              </div>
+              <p class="text-xs text-blue-800">
+                Visit <a href="https://app.ynab.com/settings/developer" target="_blank" class="font-semibold underline">YNAB Developer Settings</a> and click "New Token" to generate your Personal Access Token.
+              </p>
+            </div>
+            
+            <div class="mb-4">
+              <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Personal Access Token</label>
+              <input
+                type="password"
+                id="ynab-token"
+                placeholder="Enter your YNAB token"
+                class="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              />
+            </div>
+
+            <label class="mb-4 flex cursor-pointer items-center gap-2">
+              <input type="checkbox" id="ynab-save-token" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+              <span class="text-sm text-slate-600">Save token in browser (optional)</span>
+            </label>
+
+            <button
+              onclick="fetchYNABData()"
+              class="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition-all hover:bg-slate-800 active:scale-[0.98]"
+            >
+              Connect &amp; Import
+            </button>
+          </div>
+
+          <!-- Step 2: Select Budget & Categories -->
+          <div id="ynab-step-2" class="hidden">
+            <p class="mb-4 text-sm text-slate-600">
+              Select a budget to import subscriptions from:
+            </p>
+            
+            <div id="ynab-budgets-list" class="mb-4 space-y-2"></div>
+
+            <div id="ynab-categories-section" class="hidden">
+              <div class="mb-3 mt-6 border-t border-slate-100 pt-4">
+                <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Filter by Categories (Optional)</label>
+                <p class="mb-3 text-xs text-slate-500">Leave all unchecked to import from all categories</p>
+                <div id="ynab-categories-list" class="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3"></div>
+              </div>
+
+              <button
+                onclick="importYNABSubscriptions()"
+                class="mt-4 w-full rounded-xl bg-indigo-600 py-3 font-bold text-white transition-all hover:bg-indigo-700 active:scale-[0.98]"
+              >
+                Import Subscriptions
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3: Review Detected Subscriptions -->
+          <div id="ynab-step-3" class="hidden">
+            <p class="mb-4 text-sm text-slate-600">
+              Found <span id="ynab-detected-count" class="font-semibold">0</span> potential subscriptions. Select which ones to add:
+            </p>
+            <div id="ynab-detected-list" class="space-y-2"></div>
+            <div id="ynab-no-detected" class="hidden py-8 text-center">
+              <span class="iconify mx-auto h-12 w-12 text-slate-300" data-icon="ph:magnifying-glass"></span>
+              <p class="mt-2 text-sm text-slate-500">No recurring transactions found</p>
+              <p class="text-xs text-slate-400">Try selecting different categories or checking your budget</p>
+            </div>
+
+            <button
+              onclick="addYNABSubscriptions()"
+              id="ynab-add-btn"
+              class="mt-4 w-full rounded-xl bg-indigo-600 py-3 font-bold text-white transition-all hover:bg-indigo-700 active:scale-[0.98]"
+            >
+              Add Selected
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <a href="https://www.exchangerate-api.com">Rates By Exchange Rate API</a>
 
 
@@ -794,5 +911,6 @@
     <script src="js/circlepack.js"></script>
     <script src="js/modals.js"></script>
     <script src="js/bank-import.js"></script>
+    <script src="js/ynab-import.js"></script>
   </body>
 </html>
